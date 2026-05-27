@@ -16,7 +16,7 @@ Choose the packet whose filename starts with the first letter of your last name.
 Keep these files together while you work. You will use the starter files and packet files locally, but you will submit only one `.py` file to Canvas.
 
 ## Opening the Project
-If you are using the GitHub template, make your own copy from the template link and open that project folder in VS Code.
+If you are viewing the GitHub template repository, choose **Use this template** to make your own copy. Then open your copied project folder in VS Code.
 
 If you downloaded the files directly, open the folder that contains `huffman_starter.py`. Do not move `huffman_starter.py` away from the `packets` folder.
 
