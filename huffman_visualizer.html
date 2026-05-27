@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Huffman Decoder Visualizer</title>
+  <style>
+    body { margin: 24px; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f3ee; color: #1f2933; }
+    main { max-width: 980px; }
+    button { font: inherit; padding: 8px 12px; border: 1px solid #25313d; background: #ffffff; cursor: pointer; }
+    button:hover { background: #e8eef5; }
+    .layout { display: grid; grid-template-columns: 1fr 280px; gap: 24px; align-items: start; }
+    svg { width: 100%; height: 320px; background: white; border: 1px solid #ccd2d8; }
+    .node circle { fill: #ffffff; stroke: #25313d; stroke-width: 2; }
+    .node text { font-size: 13px; dominant-baseline: middle; text-anchor: middle; }
+    .node.active circle { fill: #ffe08a; }
+    .node.leaf circle { fill: #e8f5e9; }
+    .edge { stroke: #7b8794; stroke-width: 2; }
+    .edge.active { stroke: #d64545; stroke-width: 4; }
+    .bits { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 20px; letter-spacing: 4px; }
+    .path { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 700; }
+    .current { color: #d64545; font-weight: 700; }
+    .pixels { display: flex; gap: 8px; flex-wrap: wrap; min-height: 42px; }
+    .pixel { width: 34px; height: 34px; border: 1px solid #25313d; }
+    .panel { background: white; border: 1px solid #ccd2d8; padding: 16px; }
+    .decoded-list { padding-left: 22px; margin-bottom: 0; }
+    .decoded-list li { margin: 4px 0; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Huffman Decoder Visualizer</h1>
+  <p>Click Step. A 0 moves left, a 1 moves right. Each bit increases the current depth by one. When the walk reaches a leaf, one pixel is decoded and the walk returns to the root.</p>
+  <div class="layout">
+    <section>
+      <svg viewBox="0 0 720 320" aria-label="Small Huffman tree">
+        <line id="edge-root-red" class="edge" x1="360" y1="45" x2="200" y2="150"></line>
+        <line id="edge-root-inner" class="edge" x1="360" y1="45" x2="520" y2="150"></line>
+        <line id="edge-inner-green" class="edge" x1="520" y1="150" x2="430" y2="260"></line>
+        <line id="edge-inner-blue" class="edge" x1="520" y1="150" x2="610" y2="260"></line>
+        <g id="root" class="node active"><circle cx="360" cy="45" r="28"></circle><text x="360" y="45">root</text></g>
+        <g id="red" class="node leaf"><circle cx="200" cy="150" r="32"></circle><text x="200" y="150">red</text></g>
+        <g id="inner" class="node"><circle cx="520" cy="150" r="28"></circle><text x="520" y="150">node</text></g>
+        <g id="green" class="node leaf"><circle cx="430" cy="260" r="36"></circle><text x="430" y="260">green</text></g>
+        <g id="blue" class="node leaf"><circle cx="610" cy="260" r="34"></circle><text x="610" y="260">blue</text></g>
+        <text x="266" y="82">0</text><text x="452" y="82">1</text><text x="466" y="210">0</text><text x="572" y="210">1</text>
+      </svg>
+    </section>
+    <aside class="panel">
+      <p><strong>Bits:</strong></p>
+      <p id="bits" class="bits"></p>
+      <button id="step">Step</button>
+      <button id="reset">Reset</button>
+      <p><strong>Status:</strong> <span id="status">at root</span></p>
+      <p><strong>Current path:</strong> <span id="path" class="path">(root)</span></p>
+      <p><strong>Current depth:</strong> <span id="depth">0</span></p>
+      <p><strong>Last decoded:</strong> <span id="last">none yet</span></p>
+      <p><strong>Decoded pixels:</strong></p>
+      <div id="pixels" class="pixels"></div>
+      <ol id="decoded-list" class="decoded-list"></ol>
+    </aside>
+  </div>
+</main>
+<script>
+const bits = "010110";
+const leaves = { red: "rgb(255,0,0)", green: "rgb(0,180,0)", blue: "rgb(0,80,255)" };
+let index = 0;
+let node = "root";
+let path = "";
+let depth = 0;
+function setActive(activeNode, activeEdge) {
+  document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.edge').forEach(e => e.classList.remove('active'));
+  document.getElementById(activeNode).classList.add('active');
+  if (activeEdge) document.getElementById(activeEdge).classList.add('active');
+}
+function renderState() {
+  document.getElementById('bits').innerHTML = bits.split('').map((bit, i) => i === index ? `<span class="current">${bit}</span>` : bit).join('');
+  document.getElementById('path').textContent = path || '(root)';
+  document.getElementById('depth').textContent = depth;
+}
+function emitPixel(name, code, steps) {
+  const pixel = document.createElement('span');
+  pixel.className = 'pixel';
+  pixel.style.backgroundColor = leaves[name];
+  pixel.title = name;
+  document.getElementById('pixels').appendChild(pixel);
+
+  const item = document.createElement('li');
+  item.textContent = `${name}: code ${code}, depth ${steps}`;
+  document.getElementById('decoded-list').appendChild(item);
+}
+function step() {
+  if (index >= bits.length) { document.getElementById('status').textContent = 'done'; return; }
+  const bit = bits[index++];
+  path += bit;
+  depth += 1;
+  let edge = '';
+  if (node === 'root' && bit === '0') { node = 'red'; edge = 'edge-root-red'; }
+  else if (node === 'root' && bit === '1') { node = 'inner'; edge = 'edge-root-inner'; }
+  else if (node === 'inner' && bit === '0') { node = 'green'; edge = 'edge-inner-green'; }
+  else if (node === 'inner' && bit === '1') { node = 'blue'; edge = 'edge-inner-blue'; }
+  setActive(node, edge);
+  if (leaves[node]) {
+    emitPixel(node, path, depth);
+    document.getElementById('last').textContent = `${node} used ${depth} bit step${depth === 1 ? '' : 's'}`;
+    document.getElementById('status').textContent = `decoded ${node}; returning to root`;
+    node = 'root';
+    path = "";
+    depth = 0;
+    setTimeout(() => setActive('root'), 450);
+  } else {
+    document.getElementById('status').textContent = `read ${bit}; keep walking`;
+  }
+  renderState();
+}
+function reset() {
+  index = 0; node = 'root'; path = ""; depth = 0;
+  document.getElementById('pixels').innerHTML = '';
+  document.getElementById('decoded-list').innerHTML = '';
+  document.getElementById('status').textContent = 'at root';
+  document.getElementById('last').textContent = 'none yet';
+  setActive('root'); renderState();
+}
+document.getElementById('step').addEventListener('click', step);
+document.getElementById('reset').addEventListener('click', reset);
+reset();
+</script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+{
+  "format": "huffman-image-packet-v1",
+  "packet_kind": "practice",
+  "letter": "practice",
+  "selection_rule": "Use this packet if this letter matches the first letter of your last name.",
+  "width": 4,
+  "height": 4,
+  "pixel_count": 16,
+  "bits_per_pixel_before_huffman": 24,
+  "original_bits": 384,
+  "encoded_bit_count": 31,
+  "compression_ratio": 0.080729,
+  "percent_saved": 91.93,
+  "unique_symbols": 4,
+  "decoded_sha256": "00846f95a4022a0a62fdf223c523737aa7861789782df9f1a8b629fe363f80c3",
+  "palette": [
+    [
+      40,
+      160,
+      90
+    ],
+    [
+      45,
+      95,
+      190
+    ],
+    [
+      220,
+      40,
+      40
+    ],
+    [
+      242,
+      242,
+      238
+    ]
+  ],
+  "tree": {
+    "left": {
+      "symbol": [
+        242,
+        242,
+        238
+      ]
+    },
+    "right": {
+      "left": {
+        "symbol": [
+          220,
+          40,
+          40
+        ]
+      },
+      "right": {
+        "left": {
+          "symbol": [
+            40,
+            160,
+            90
+          ]
+        },
+        "right": {
+          "symbol": [
+            45,
+            95,
+            190
+          ]
+        }
+      }
+    }
+  },
+  "bits": "0101001100011011111101001101110",
+  "notes": "This is a generated color-binned image packet. The tree and bit string are enough to reconstruct the image without building a Huffman tree."
+}

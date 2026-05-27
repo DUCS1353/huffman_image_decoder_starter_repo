@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+decoded_image.ppm
+decoded_preview.html
