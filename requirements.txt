@@ -2,6 +2,7 @@
 # Use Python 3 and the standard library only.
 #
 # Expected standard-library modules include:
+# - collections.abc
 # - pathlib
 # - json
 # - dataclasses
