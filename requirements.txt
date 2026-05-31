@@ -1,0 +1,12 @@
+# This project intentionally has no third-party Python package requirements.
+# Use Python 3 and the standard library only.
+#
+# Expected standard-library modules include:
+# - pathlib
+# - json
+# - dataclasses
+# - hashlib
+# - argparse
+#
+# Do not add Pillow/PIL, OpenCV, NumPy, pandas, compression libraries,
+# Huffman libraries, API clients, or AI packages for this assignment.

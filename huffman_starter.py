@@ -23,6 +23,9 @@ import string
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
+# This project is intentionally standard-library only. Do not add Pillow/PIL,
+# OpenCV, NumPy, compression libraries, Huffman libraries, API clients, or AI
+# packages. The assignment is about walking the provided Huffman tree yourself.
 Pixel = Tuple[int, int, int]
 
 

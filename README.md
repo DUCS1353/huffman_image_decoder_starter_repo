@@ -8,6 +8,7 @@ This folder contains the starter files for Project 4.
 - `practice_packet.json`: a tiny packet for inspecting the packet format.
 - `packets/`: assigned image packets from `A_huffman_image.json` through `Z_huffman_image.json`.
 - `huffman_visualizer.html`: a local visualizer for a Huffman tree walk.
+- `requirements.txt`: confirms that no third-party Python packages are required.
 - `.vscode/`: recommended VS Code Python extensions and settings.
 - `.gitignore`: ignores generated output files and Python cache files.
 
@@ -21,6 +22,27 @@ If you are viewing the GitHub template repository, choose **Use this template** 
 If you downloaded the files directly, open the folder that contains `huffman_starter.py`. Do not move `huffman_starter.py` away from the `packets` folder.
 
 VS Code may ask whether you want to install recommended Python extensions. Installing them is helpful, but the project does not require any third-party Python packages.
+
+## Packages and Libraries
+Use Python 3 and the Python standard library only.
+
+You should use:
+
+- `pathlib.Path` for file paths;
+- `json` to read the packet files;
+- a simple `Node` class or the provided `@dataclass` for tree nodes;
+- a Python `dict` as a hashmap for color counts;
+- the starter's existing `hashlib` code to check your decoded pixels.
+
+Do not use:
+
+- Pillow/PIL, OpenCV, imageio, matplotlib, or other image libraries;
+- NumPy, pandas, or other array/dataframe libraries;
+- compression or Huffman libraries such as `zlib`, `gzip`, `bz2`, `lzma`, `bitarray`, `bitstring`, or `dahuffman`;
+- network, AI, or API packages;
+- code that hard-codes the decoded image instead of walking the Huffman tree.
+
+The `requirements.txt` file is intentionally empty except for comments. You do not need to install anything with `pip`. VS Code extensions are allowed because they help you edit code; they are not Python packages used by your program.
 
 ## Overview
 You are building a Huffman decoder for an image.
