@@ -4,11 +4,11 @@ Starter code for Project 4: Decode Your Huffman Image.
 Fill in decode_bits, then run:
 
     python test_huffman.py
-    python huffman_starter.py --letter A
+    python huffman_starter.py
 
-Use the packet whose letter matches the first letter of your last name. The
+Set PACKET_LETTER below to the first letter of your last name. The
 provided packet contains the Huffman tree, compressed bits, image dimensions,
-and checksum needed to reconstruct the image.
+and checksum used to verify the reconstructed image.
 
 The file is organized in four parts:
 
@@ -20,7 +20,6 @@ The file is organized in four parts:
 
 from __future__ import annotations
 
-import argparse
 from dataclasses import dataclass
 import hashlib
 import html
@@ -31,9 +30,9 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
 # Standard-library module guide:
-# - argparse reads command-line options such as --letter S.
 # - dataclasses creates the small Node class without a hand-written __init__.
-# - hashlib computes the checksum used to verify decoded pixels.
+# - hashlib computes an exact-match checksum for decoded pixels. This is
+#   verification machinery, not part of the Huffman decoding algorithm.
 # - html safely escapes text inserted into the preview page.
 # - json reads packet files.
 # - pathlib.Path keeps file paths relative to this script.
@@ -44,6 +43,16 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 # OpenCV, NumPy, compression libraries, Huffman libraries, API clients, or AI
 # packages. The assignment is about walking the provided Huffman tree yourself.
 Pixel = Tuple[int, int, int]
+
+
+# Change this to the first letter of your last name before running
+# python huffman_starter.py. For example, "S" uses packets/S_huffman_image.json.
+PACKET_LETTER = "A"
+
+# Leave this as None for the assigned A-Z packet. If your instructor gives you
+# a different packet for testing, set this to a relative path such as
+# Path("practice_packet.json").
+PACKET_PATH: Optional[Path] = None
 
 
 # A Pixel is an RGB color written as (red, green, blue).
@@ -99,7 +108,9 @@ def load_packet(path: str | Path) -> Dict[str, Any]:
     """Load one Huffman image packet and check its required fields.
 
     Each packet contains the image width and height, the provided Huffman tree,
-    the encoded bit string, and the checksum for the decoded pixels.
+    the encoded bit string, and a checksum for checking your decoded pixels.
+    The checksum is like an answer-key fingerprint: it helps you know whether
+    the decoded image is exactly right, but you do not decode the checksum.
     """
     packet = json.loads(Path(path).read_text(encoding="utf-8"))
     required = {"width", "height", "tree", "bits", "decoded_sha256"}
@@ -255,7 +266,8 @@ def pixel_bytes(pixels: Iterable[Pixel]) -> bytes:
     """Pack RGB pixels into bytes for checksum verification.
 
     The checksum must depend on the exact red, green, and blue values in order,
-    so each pixel is flattened into three byte values.
+    so each pixel is flattened into three byte values. This helper is used only
+    to check whether your decoded answer matches the packet.
     """
     values: List[int] = []
     for red, green, blue in pixels:
@@ -264,7 +276,12 @@ def pixel_bytes(pixels: Iterable[Pixel]) -> bytes:
 
 
 def pixel_checksum(pixels: Iterable[Pixel]) -> str:
-    """Return a SHA-256 checksum for a pixel sequence."""
+    """Return a SHA-256 checksum for a pixel sequence.
+
+    You do not need to know the details of SHA-256 for this project. Treat the
+    result as a fingerprint for the decoded pixels: if one pixel is wrong, the
+    checksum will almost certainly be different.
+    """
     return hashlib.sha256(pixel_bytes(pixels)).hexdigest()
 
 
@@ -414,32 +431,21 @@ def write_preview_html(
     Path(path).write_text(document, encoding="utf-8")
 
 
-def packet_from_args(base_dir: Path, letter: Optional[str], packet_path: Optional[Path]) -> Tuple[Path, Dict[str, Any]]:
-    """Load either an explicit packet path or the packet matching a letter."""
+def packet_from_settings(base_dir: Path, letter: str, packet_path: Optional[Path]) -> Tuple[Path, Dict[str, Any]]:
+    """Load either PACKET_PATH or the packet matching PACKET_LETTER."""
     if packet_path is not None:
         path = packet_path
+        if not path.is_absolute():
+            path = base_dir / path
     else:
-        path = packet_path_for_letter(letter or "A", base_dir)
+        path = packet_path_for_letter(letter, base_dir)
     return path, load_packet(path)
 
 
-def main(argv: Optional[List[str]] = None) -> int:
-    """Run the full local decoder workflow from the command line."""
+def main() -> int:
+    """Run the full local decoder workflow."""
     here = Path(__file__).resolve().parent
-    parser = argparse.ArgumentParser(description="Decode one assigned Huffman image packet.")
-    parser.add_argument(
-        "--letter",
-        default="A",
-        help="First letter of your last name. Example: --letter S",
-    )
-    parser.add_argument(
-        "--packet",
-        type=Path,
-        help="Optional direct path to a packet JSON file.",
-    )
-    args = parser.parse_args(argv)
-
-    packet_path, packet = packet_from_args(here, args.letter, args.packet)
+    packet_path, packet = packet_from_settings(here, PACKET_LETTER, PACKET_PATH)
     tree = tree_from_dict(packet["tree"])
     encoded_bits = "".join(str(packet["bits"]).split())
 
@@ -453,6 +459,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     if len(pixels) != expected_count:
         raise ValueError(f"Expected {expected_count} pixels, decoded {len(pixels)}.")
 
+    # This is a final exact-match check. Visual inspection is helpful, but a
+    # checksum can catch a single wrong pixel that your eye might miss.
     checksum = pixel_checksum(pixels)
     checksum_matches = checksum == packet["decoded_sha256"]
     counts = count_pixels(pixels)

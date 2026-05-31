@@ -32,7 +32,7 @@ You should use:
 - `json` to read the packet files;
 - a simple `Node` class or the provided `@dataclass` for tree nodes;
 - a Python `dict` as a hashmap for color counts;
-- the starter's existing `hashlib` code to check your decoded pixels.
+- the starter's existing `hashlib` code to check whether your decoded pixels are an exact match.
 
 Do not use:
 
@@ -47,16 +47,15 @@ The `requirements.txt` file is intentionally empty except for comments. You do n
 ### Standard-Library Module Guide
 The starter uses only modules that come with Python.
 
-- `argparse` reads command-line options such as `--letter S`.
 - `dataclasses` creates the small `Node` class without writing a long constructor.
-- `hashlib` computes the SHA-256 checksum used to verify the decoded pixels.
+- `hashlib` computes the SHA-256 checksum used to verify the decoded pixels. This is only an exact-match check, not part of the Huffman algorithm.
 - `html` escapes text that is inserted into `decoded_preview.html`.
 - `json` reads the packet files, which store the tree, bit string, dimensions, and checksum.
 - `pathlib.Path` builds file paths that work on different computers.
 - `string` provides `ascii_uppercase`, which is used to check packet letters from `A` to `Z`.
 - `typing` provides type hints such as `List[Pixel]` and `Dict[Pixel, int]`.
 
-You do not need to memorize these modules. Use this list when you want to understand why an import is present.
+You do not need to memorize these modules. Use this list when you want to understand why an import is present. Your main algorithmic work is still the tree walk inside `decode_bits`.
 
 ## Overview
 You are building a Huffman decoder for an image.
@@ -126,6 +125,19 @@ This means red has code `0`, green has code `10`, and blue has code `11`.
 
 The starter code already converts this JSON into `Node` objects with `tree_from_dict`. After that, your decoder should use `current.left`, `current.right`, and `current.is_leaf()`.
 
+## Packet Fields
+Each packet is one JSON object. The important fields are:
+
+- `width` and `height`: the decoded image size.
+- `tree`: the provided Huffman tree. You use this to decode the bit string.
+- `bits`: the compressed bit string. Your decoder reads this from left to right.
+- `decoded_sha256`: an exact-match checksum for the decoded pixels.
+- `bits_per_pixel_before_huffman`: the uncompressed RGB size used for compression statistics.
+
+The checksum is mostly there for testing and debugging. It is like a fingerprint of the correct decoded image. The starter computes a checksum from your decoded pixels and compares it to `decoded_sha256`. If the two checksums match, your pixels are in the right order and have the right RGB values.
+
+You do not decode `decoded_sha256`, and you do not need to understand the details of SHA-256. The project is about walking the Huffman tree. The checksum is just a reliable way to catch mistakes that might be hard to see by eye.
+
 ## Code Map
 The main file is `huffman_starter.py`. It is organized so that the decoding task stays small.
 
@@ -157,7 +169,7 @@ The main file is `huffman_starter.py`. It is organized so that the decoding task
 - `pixel_checksum(pixels)` checks whether your decoded pixels match the packet.
 - `write_ppm(...)` writes `decoded_image.ppm` without using an image library.
 - `write_preview_html(...)` writes `decoded_preview.html` so you can inspect the image in a browser.
-- `main(...)` connects the command-line arguments, packet loading, decoding, analysis, and output.
+- `main(...)` connects the packet setting, packet loading, decoding, analysis, and output.
 
 ## Test File Map
 The file `test_huffman.py` is meant to be readable. Each test focuses on one behavior.
@@ -182,8 +194,9 @@ Use these checkpoints:
 9. Raise `ValueError` if the bit string ends before reaching a leaf.
 10. Count decoded pixel colors with a Python `dict`.
 11. Print the compression ratio, tree height, average Huffman bits per pixel, and most common colors.
-12. Run `python huffman_starter.py --letter X`, replacing `X` with your last-name initial.
-13. Open `decoded_preview.html`.
+12. Set `PACKET_LETTER = "X"` in `huffman_starter.py`, replacing `X` with your last-name initial.
+13. Run `python huffman_starter.py`.
+14. Open `decoded_preview.html`.
 
 If the project feels large, do not start with the image packet. Start with the small visible tests in `test_huffman.py`. The image packet only works after the same small tree-walk idea works.
 
@@ -200,10 +213,10 @@ At first, the tests will report TODO functions because `huffman_starter.py` is i
 After the tests pass, run:
 
 ```sh
-python huffman_starter.py --letter X
+python huffman_starter.py
 ```
 
-Replace `X` with the first letter of your last name.
+Before running, set `PACKET_LETTER` near the top of `huffman_starter.py` to the first letter of your last name.
 
 Your script should create:
 
@@ -244,7 +257,7 @@ Your script should include:
 - `count_pixels(pixels)` using a Python `dict`;
 - compression statistics from `main`;
 - tree height and average Huffman bits per pixel;
-- a `main` function or command-line runner;
+- a `main` function or simple runner;
 - a top-of-file comment explaining the tree walk;
 - your checksum result;
 - a short note describing the decoded image and compression results.

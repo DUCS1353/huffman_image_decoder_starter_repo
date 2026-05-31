@@ -5,8 +5,7 @@
 # - pathlib
 # - json
 # - dataclasses
-# - hashlib
-# - argparse
+# - hashlib, used only for exact-match checksum verification
 #
 # Do not add Pillow/PIL, OpenCV, NumPy, pandas, compression libraries,
 # Huffman libraries, API clients, or AI packages for this assignment.
