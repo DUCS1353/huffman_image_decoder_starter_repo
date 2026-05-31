@@ -9,6 +9,13 @@ Fill in decode_bits, then run:
 Use the packet whose letter matches the first letter of your last name. The
 provided packet contains the Huffman tree, compressed bits, image dimensions,
 and checksum needed to reconstruct the image.
+
+The file is organized in four parts:
+
+1. Data structures for pixels and Huffman tree nodes.
+2. Helpers that load packet files and convert JSON into tree nodes.
+3. The decode_bits function, which is the main student task.
+4. Analysis and output helpers that verify and display the decoded image.
 """
 
 from __future__ import annotations
@@ -23,6 +30,16 @@ import string
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
+# Standard-library module guide:
+# - argparse reads command-line options such as --letter S.
+# - dataclasses creates the small Node class without a hand-written __init__.
+# - hashlib computes the checksum used to verify decoded pixels.
+# - html safely escapes text inserted into the preview page.
+# - json reads packet files.
+# - pathlib.Path keeps file paths relative to this script.
+# - string provides the A-Z alphabet for packet-letter validation.
+# - typing provides type hints that document expected values.
+#
 # This project is intentionally standard-library only. Do not add Pillow/PIL,
 # OpenCV, NumPy, compression libraries, Huffman libraries, API clients, or AI
 # packages. The assignment is about walking the provided Huffman tree yourself.
@@ -33,18 +50,23 @@ Pixel = Tuple[int, int, int]
 # Each value is an integer from 0 to 255.
 @dataclass
 class Node:
-    """A node in a provided Huffman tree."""
+    """One node in the provided Huffman tree.
+
+    A leaf node stores a pixel in symbol and has no children.
+    An internal node has left and right children and no symbol.
+    """
 
     symbol: Optional[Pixel] = None
     left: Optional["Node"] = None
     right: Optional["Node"] = None
 
     def is_leaf(self) -> bool:
+        """Return True when this node stores a decoded pixel."""
         return self.symbol is not None
 
 
 def tree_from_dict(data: Dict[str, Any]) -> Node:
-    """Convert the provided JSON tree into Node objects."""
+    """Convert the packet's nested JSON tree into Node objects."""
     # Packet files store trees as nested dictionaries because JSON cannot store
     # Python objects directly. This helper rebuilds the tree into Node objects.
     if "symbol" in data:
@@ -56,7 +78,7 @@ def tree_from_dict(data: Dict[str, Any]) -> Node:
 
 
 def normalize_letter(value: str) -> str:
-    """Return the first A-Z letter from a student's last-name initial."""
+    """Return one uppercase A-Z packet letter from user input."""
     cleaned = value.strip().upper()
     if not cleaned:
         raise ValueError("Choose a packet letter from A to Z.")
@@ -68,13 +90,17 @@ def normalize_letter(value: str) -> str:
 
 
 def packet_path_for_letter(letter: str, base_dir: str | Path) -> Path:
-    """Return the packet path for a last-name initial."""
+    """Return the assigned packet path for a last-name initial."""
     initial = normalize_letter(letter)
     return Path(base_dir) / "packets" / f"{initial}_huffman_image.json"
 
 
 def load_packet(path: str | Path) -> Dict[str, Any]:
-    """Load one Huffman image packet from JSON."""
+    """Load one Huffman image packet and check its required fields.
+
+    Each packet contains the image width and height, the provided Huffman tree,
+    the encoded bit string, and the checksum for the decoded pixels.
+    """
     packet = json.loads(Path(path).read_text(encoding="utf-8"))
     required = {"width", "height", "tree", "bits", "decoded_sha256"}
     missing = sorted(required - set(packet))
@@ -84,23 +110,36 @@ def load_packet(path: str | Path) -> Dict[str, Any]:
 
 
 def load_tree(path: str | Path) -> Node:
-    """Load a Huffman tree from a JSON file."""
+    """Load a standalone Huffman tree from a JSON file.
+
+    The main packet format stores the tree inside one packet file, so this
+    helper is mainly useful for experiments and small tests.
+    """
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     return tree_from_dict(data)
 
 
 def load_bits(path: str | Path) -> str:
-    """Load encoded bits from a text file, ignoring whitespace."""
+    """Load encoded bits from a text file, ignoring whitespace.
+
+    The project packets store bits in JSON, but this helper is useful if you
+    want to test your decoder with a separate text file of 0s and 1s.
+    """
     return "".join(Path(path).read_text(encoding="utf-8").split())
 
 
 def load_metadata(path: str | Path) -> Dict[str, Any]:
-    """Load image metadata from JSON."""
+    """Load a standalone metadata JSON file for experiments."""
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
 def decode_bits(encoded_bits: str, tree: Node) -> List[Pixel]:
-    """Decode a string of 0 and 1 characters using a provided Huffman tree."""
+    """Decode a string of 0 and 1 characters using a provided Huffman tree.
+
+    Return one RGB pixel tuple for each decoded leaf reached by the bit walk.
+    This is the only function where you need to implement the core decoding
+    algorithm.
+    """
     # Each bit moves one level down the tree. Decoding one pixel takes work
     # proportional to that pixel leaf's depth.
     #
@@ -131,12 +170,15 @@ def count_pixels(pixels: Iterable[Pixel]) -> Dict[Pixel, int]:
 
 
 def most_common_pixels(counts: Dict[Pixel, int], limit: int = 5) -> List[Tuple[Pixel, int]]:
-    """Return the most common pixels and their counts."""
+    """Return the most common pixels and their counts.
+
+    The sorting key uses the count value from each (pixel, count) pair.
+    """
     return sorted(counts.items(), key=lambda item: item[1], reverse=True)[:limit]
 
 
 def tree_height(tree: Node) -> int:
-    """Return the largest number of edges from the root to a leaf."""
+    """Return the largest number of edges from the root to any leaf."""
     # A single leaf has height 0 because no edges are needed to reach it.
     if tree.is_leaf():
         return 0
@@ -210,7 +252,11 @@ def compression_stats(
 
 
 def pixel_bytes(pixels: Iterable[Pixel]) -> bytes:
-    """Pack RGB pixels into bytes for checksum verification."""
+    """Pack RGB pixels into bytes for checksum verification.
+
+    The checksum must depend on the exact red, green, and blue values in order,
+    so each pixel is flattened into three byte values.
+    """
     values: List[int] = []
     for red, green, blue in pixels:
         values.extend([red, green, blue])
@@ -223,7 +269,11 @@ def pixel_checksum(pixels: Iterable[Pixel]) -> str:
 
 
 def write_ppm(path: str | Path, width: int, height: int, pixels: Iterable[Pixel]) -> None:
-    """Write pixels to a plain-text P3 PPM image."""
+    """Write pixels to a plain-text P3 PPM image.
+
+    P3 PPM stores image data as readable text: a small header followed by red,
+    green, and blue numbers for each pixel.
+    """
     # PPM is intentionally used here because it is a very simple image format.
     # It lets us write a viewable image without installing an image library.
     pixels = list(pixels)
@@ -245,7 +295,11 @@ def write_preview_html(
     top_pixels: Optional[List[Tuple[Pixel, int]]] = None,
     packet_name: str = "assigned packet",
 ) -> None:
-    """Write a local HTML preview of the decoded image."""
+    """Write a local HTML preview of the decoded image.
+
+    The preview uses a grid of colored spans. This keeps the preview
+    self-contained and avoids any image-processing dependency.
+    """
     pixels = list(pixels)
     if len(pixels) != width * height:
         raise ValueError("Pixel count does not match width * height.")
@@ -370,6 +424,7 @@ def packet_from_args(base_dir: Path, letter: Optional[str], packet_path: Optiona
 
 
 def main(argv: Optional[List[str]] = None) -> int:
+    """Run the full local decoder workflow from the command line."""
     here = Path(__file__).resolve().parent
     parser = argparse.ArgumentParser(description="Decode one assigned Huffman image packet.")
     parser.add_argument(

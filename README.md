@@ -44,6 +44,20 @@ Do not use:
 
 The `requirements.txt` file is intentionally empty except for comments. You do not need to install anything with `pip`. VS Code extensions are allowed because they help you edit code; they are not Python packages used by your program.
 
+### Standard-Library Module Guide
+The starter uses only modules that come with Python.
+
+- `argparse` reads command-line options such as `--letter S`.
+- `dataclasses` creates the small `Node` class without writing a long constructor.
+- `hashlib` computes the SHA-256 checksum used to verify the decoded pixels.
+- `html` escapes text that is inserted into `decoded_preview.html`.
+- `json` reads the packet files, which store the tree, bit string, dimensions, and checksum.
+- `pathlib.Path` builds file paths that work on different computers.
+- `string` provides `ascii_uppercase`, which is used to check packet letters from `A` to `Z`.
+- `typing` provides type hints such as `List[Pixel]` and `Dict[Pixel, int]`.
+
+You do not need to memorize these modules. Use this list when you want to understand why an import is present.
+
 ## Overview
 You are building a Huffman decoder for an image.
 
@@ -111,6 +125,48 @@ Here is a complete small tree:
 This means red has code `0`, green has code `10`, and blue has code `11`.
 
 The starter code already converts this JSON into `Node` objects with `tree_from_dict`. After that, your decoder should use `current.left`, `current.right`, and `current.is_leaf()`.
+
+## Code Map
+The main file is `huffman_starter.py`. It is organized so that the decoding task stays small.
+
+### Data Representation
+- `Pixel` is a type hint for an RGB color tuple: `(red, green, blue)`.
+- `Node` represents one Huffman tree node. A leaf node has a `symbol`. An internal node has `left` and `right` children.
+- `Node.is_leaf()` tells you whether the current tree node stores a pixel.
+
+### Packet Loading
+- `normalize_letter(value)` turns a last-name initial into an uppercase packet letter.
+- `packet_path_for_letter(letter, base_dir)` builds the path to the matching packet in `packets/`.
+- `load_packet(path)` reads one packet JSON file and checks that the required fields are present.
+- `tree_from_dict(data)` converts the packet's nested JSON tree into `Node` objects.
+
+### Your Main Function
+- `decode_bits(encoded_bits, tree)` is the main function you complete.
+- It should return a list of RGB pixel tuples.
+- It should not build a new tree, use a compression library, or look up a precomputed answer.
+
+### Analysis Helpers
+- `count_pixels(pixels)` uses a Python `dict` as a hashmap to count colors.
+- `most_common_pixels(counts)` finds the most frequent colors.
+- `tree_height(tree)` finds the longest root-to-leaf path.
+- `code_lengths(tree)` records each color's Huffman code length.
+- `weighted_average_code_length(counts, lengths)` computes the average number of Huffman bits per decoded pixel.
+- `compression_stats(...)` compares the encoded bit count with the original 24-bit RGB size.
+
+### Output Helpers
+- `pixel_checksum(pixels)` checks whether your decoded pixels match the packet.
+- `write_ppm(...)` writes `decoded_image.ppm` without using an image library.
+- `write_preview_html(...)` writes `decoded_preview.html` so you can inspect the image in a browser.
+- `main(...)` connects the command-line arguments, packet loading, decoding, analysis, and output.
+
+## Test File Map
+The file `test_huffman.py` is meant to be readable. Each test focuses on one behavior.
+
+- The first decoding tests use a tiny tree where red is `0`, green is `10`, and blue is `11`.
+- The invalid-input tests check that your decoder raises `ValueError` when the bit string cannot be decoded cleanly.
+- The packet-loading test checks that the local files are in the expected place.
+- The counting, checksum, tree, and compression tests check helper functions that are already provided.
+- The output-file test checks that the starter can write a PPM image and HTML preview.
 
 ## Suggested Path
 Use these checkpoints:

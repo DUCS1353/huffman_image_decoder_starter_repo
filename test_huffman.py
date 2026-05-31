@@ -3,6 +3,9 @@ Visible tests for Project 4: Decode Your Huffman Image.
 
 These tests check decoder behavior. Passing them does not prove every case is
 correct, but failing them means there is decoder logic to fix.
+
+Read this file as examples. Each test is a small statement about what one
+function should do.
 """
 
 from pathlib import Path
@@ -27,6 +30,7 @@ from huffman_starter import (
 )
 
 
+# The tests use readable color names so the expected decoded output is clear.
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
@@ -60,6 +64,7 @@ def test_decode_single_symbol_tree():
 
 
 def test_invalid_bit_raises_value_error():
+    # A Huffman bit string should contain only 0 and 1 characters.
     try:
         decode_bits("012", small_tree())
     except ValueError:
@@ -68,6 +73,7 @@ def test_invalid_bit_raises_value_error():
 
 
 def test_unfinished_code_raises_value_error():
+    # Ending at an internal node means the final symbol was never completed.
     try:
         # 0 decodes to red, but the final 1 stops at an internal node.
         decode_bits("01", small_tree())
@@ -88,6 +94,8 @@ def test_tree_from_dict():
 
 
 def test_packet_selection_and_loading():
+    # These checks make sure the starter folder has the expected files and
+    # that paths are built relative to this project.
     here = Path(__file__).resolve().parent
     assert normalize_letter("smith") == "S"
     assert normalize_letter(" S ") == "S"
@@ -101,6 +109,8 @@ def test_packet_selection_and_loading():
 
 
 def test_pixel_checksum_is_stable():
+    # The same pixels in the same order should always produce the same
+    # checksum. Changing the order should change the checksum.
     pixels = [RED, GREEN, BLUE, RED]
     assert pixel_checksum(pixels) == pixel_checksum(list(pixels))
     assert pixel_checksum(pixels) != pixel_checksum([RED, BLUE, GREEN, RED])
@@ -156,6 +166,7 @@ def test_output_files_can_be_written():
 
 
 def run_test(name, test_func):
+    """Run one test function and print a beginner-friendly result."""
     try:
         test_func()
     except NotImplementedError as exc:
@@ -170,6 +181,7 @@ def run_test(name, test_func):
 
 
 def main():
+    """Run all visible tests without requiring pytest."""
     tests = [
         ("decode small tree", test_decode_small_tree),
         ("decode empty bits", test_decode_empty_bits),
